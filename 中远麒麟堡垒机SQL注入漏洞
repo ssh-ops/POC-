@@ -17,7 +17,7 @@ def banner():
 
 def main():
     banner()
-    parser = argparse.ArgumentParser(description="Cosco Kirin fortress machine SQL injection vulnerability")
+    parser = argparse.ArgumentParser(description="中远麒麟堡垒机SQL注入漏洞")
     parser.add_argument('-u','--url',dest='url',type=str,help="Please input your URL")
     parser.add_argument('-f','--file',dest='file',type=str,help="Please input your File path")
     args = parser.parse_args()
